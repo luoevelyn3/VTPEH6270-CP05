@@ -1,0 +1,244 @@
+---
+title: "VTPEH 6270 - Check Point 01"
+subtitle: "Basic R Skills"
+author: "Yuhui Luo"
+date: "January 25, 2026"
+editor_options:
+  chunk_output_type: console
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 1
+    number_sections: true
+urlcolor: blue
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+# Introduction
+
+*Passing this assignment with a grade $\geq 5/10$ is required to enroll in VTPEH 6270: Data Analysis with R. Threshold may be adjusted based on cohort performances and course capacity. It is due on * ***Monday January 26, 2026 at 10 AM EST.*** *It must be submitted on Canvas as a* ***R markdown-generated*** *PDF file (from the .Rmd template available on the Assignment page). Submissions in any other format will be considered late until the requested format has been submitted; failure to submit the requested format within 7 days will lead to a 0 to the assignment.* 
+
+This assignment is aimed at assessing your coding skills, including in particular:
+
+1. Whether you can find on your own (using whatever tools you have available: Google, AI...) a way to do what you want to do. 
+2. Whether you manage to keep the big picture in mind (not coding for coding, but coding to answer questions and communicate answers).
+
+We will use the *Vaccination Coverage among Pregnant Women* data set available at [data.cdc.gov/Pregnancy-Vaccination/Vaccination-Coverage-among-Pregnant-Women/h7pm-wmjc/about_data](https://data.cdc.gov/Pregnancy-Vaccination/Vaccination-Coverage-among-Pregnant-Women/h7pm-wmjc/about_data). The main question we want to address is: ***how has vaccination coverage changed through the years?***
+
+# Loading Data
+
+```{r, results='hide'}
+
+# Set working directory
+
+
+# Load file
+data_vaccination <- read.csv("/Users/evelyn/Downloads/CDC_vaccination_pregnancy_20250120.csv")
+# data_vaccination =
+
+# Preview the data
+head(data_vaccination)
+
+```
+
+The data set is not labeled using best practices (e.g., uses unusual characters like "..."). We can clean the formatting using the `janitor` package.
+
+```{r, results='hide'}
+
+# install.packages("janitor")
+library(janitor)
+data_vaccination = clean_names(data_vaccination)
+
+# Preview the cleaned data
+head(data_vaccination)
+names(data_vaccination)
+
+```
+
+# Eploring the Data
+
+*Answer the questions below using* ***code.*** *Manually-generated lists will not be considered, as this kind of approach is prone to errors, is inefficient when applied to big data sets, and represent a barrier to science transparency and repeatability.*
+
+*Which vaccines are considered in the data set? List the diseases.*
+
+```{r, results='hide'}
+
+#
+unique(data_vaccination$vaccine)
+
+```
+
+The considered vaccines are influenza and Tdap.
+
+*Which individual characteristics are considered? List them.*
+
+```{r, results='hide'}
+
+#
+unique(data_vaccination$dimension_type)
+
+```
+
+The considered individual characteristics are Race and Ethnicity and Age.
+
+*Which races and ethnicities are represented in the data set?*
+
+```{r, results='hide'}
+
+#
+unique(data_vaccination$dimension_type)
+unique(
+  data_vaccination$dimension[
+    data_vaccination$dimension_type == "Race and Ethnicity"
+  ]
+)
+
+
+```
+
+The represented races and ethnicities are White, Non-Hispanic; Black, Non-Hispanic; Hispanic; and Other or Multiple Races, Non-Hispanic.
+
+*What is the time period covered by the study? Indicate the earliest and latest year considered.*
+
+```{r, results='hide'}
+
+#
+range(data_vaccination$survey_year_influenza_season, na.rm = TRUE)
+
+```
+
+The study spans from 2012 to 2022.
+
+*What type of data do you expect the estimated vaccination coverage to be? What is it in the original data set? How can you correct this?*
+
+```{r, results='hide'}
+
+# Check class
+
+class(data_vaccination$estimate)
+
+# Check values to ensure class conversion will not erase any important data
+
+head(data_vaccination$estimate)
+
+# Class conversion
+
+data_vaccination$estimate <- as.numeric(data_vaccination$estimate)
+
+# Check output
+
+class(data_vaccination$estimate)
+
+```
+
+Vaccination coverage should be recorded as a numeric variable representing a percentage. In the original data set, the estimate variable is stored as character data and includes non-numeric values such as missing or suppressed entries. After verifying this, the variable was converted to numeric, with non-numeric values correctly converted to NA.
+
+# Focus Description of 18-34 years old of NY State
+
+*Subset the data to represent only 18+ years old of NY State*
+
+```{r, results='hide'}
+
+#
+unique(
+  data_vaccination$dimension[
+    data_vaccination$dimension_type == "Age"
+  ]
+)
+
+ny_18plus <- subset(
+  data_vaccination,
+  geography == "New York" &
+  dimension_type == "Age" &
+  dimension == ">=18 Years"
+)
+
+ny_18plus <- subset(
+  ny_18plus,
+  vaccine %in% c("Influenza", "Tdap")
+)
+
+table(ny_18plus$vaccine)
+range(ny_18plus$survey_year_influenza_season, na.rm = TRUE)
+
+```
+
+*Make a plot showing the estimated vaccination coverage across years for Tdap and for influenza*
+
+*Generate a* ***publication-ready*** *plot.*
+
+```{r, results='hide'}
+
+#
+library(ggplot2)
+
+ggplot(ny_18plus,
+       aes(x = survey_year_influenza_season, y = estimate, color = vaccine)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = seq(min(ny_18plus$survey_year_influenza_season),
+                                  max(ny_18plus$survey_year_influenza_season),
+                                  by = 1)) +
+  labs(
+    title = "Vaccination Coverage in New York State (>=18 Years)",
+    x = "Year",
+    y = "Estimated vaccination coverage (%)",
+    color = "Vaccine"
+  ) +
+  theme_minimal(base_size = 12)
+
+
+```
+
+*What does this plot show?*
+
+This plot shows trends in estimated vaccination coverage among adults aged 18 years and older in New York State from 2013 to 2022, with Tdap coverage consistently higher than influenza coverage across most years.
+
+*What is the highest recorded value of Influenza vaccination coverage?*
+
+```{r, results='hide'}
+
+#
+max(ny_18plus$estimate[ny_18plus$vaccine == "Influenza"], na.rm = TRUE)
+
+
+```
+
+Influenza vaccination peaked at 64.3%.
+
+*What is the average Influenza vaccination coverage over the study period?*
+
+```{r, results='hide'}
+
+#
+mean(ny_18plus$estimate[ny_18plus$vaccine == "Influenza"], na.rm = TRUE)
+
+
+```
+
+Average influenza vaccination coverage over the study period was approximately 57.47%.
+
+
+# AI Use Disclosure Statement
+
+*As part of this assignment, please indicate whether you used any AI-based tools (e.g., ChatGPT, Claude, Copilot, Gemini, etc.). Indicate:*
+
+* *Did you use AI? Yes / No*
+
+* *If yes: Write a short disclosure statement (2–3 sentences) describing:*
+
+* *Which tool(s) you used.*
+
+* *How you used it (e.g., to help decide on an analysis approach, to generate a first draft of code, to improve or debug code you had written yourself, etc.).*
+
+*Example: “This document was generated using Claude to generate original code, which was then reviewed and adjusted” or "This document was generate using ChatGPT to assist with debugging of code generated by the author".*
+
+*Please keep your statement brief and honest. The goal is transparency, not detail: we do not need exact prompts or transcripts, just a clear sense of how AI supported this work.*
+
+Yes. ChatGPT was used to assist with understanding the assignment requirements and to help debug R code written by the author. All analyses, code execution, and interpretations were reviewed and finalized by the author.
+

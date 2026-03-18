@@ -1,0 +1,155 @@
+---
+title: "VTPEH 6270 - CP03 Data Exploration"
+author: "Yuhui Luo"
+date: "2026-02-19"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    toc_depth: 2
+fontsize: 11pt
+geometry: margin=1in
+bibliography: /Users/evelyn/Library/CloudStorage/OneDrive-CornellUniversity/6270/references.bib
+csl: /Users/evelyn/Library/CloudStorage/OneDrive-CornellUniversity/6270/ama.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+library(tidyverse)
+library(janitor)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(here)
+theme_set(theme_bw(base_size = 11))
+
+```
+
+# Introduction
+This report explores county-level variation in health care access and socioeconomic context in the United States. Using a county dataset including demographic composition, income, insurance coverage, and health infrastructure indicators, I conduct descriptive and visual exploratory analyses to examine whether primary care physician supply differs across counties with different income levels.
+
+# Research Question & Background
+## Research Question
+> Do counties with different median household income levels differ in primary care physician availability (Primary Care Physicians Rate)?
+
+## Background
+> Access to primary care is associated with better preventive service uptake and improved health outcomes [@starfield2005; @shi2012]. County Health Rankings provides standardized county-level measures of primary care physician supply and uninsured population, supporting comparisons across counties [@chr2024]. Prior evidence indicates that lack of insurance is linked to reduced use of recommended health care services [@aspe_uninsured2022].
+
+# Data Preparation
+```{r load-data, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+county <- read_csv(here("data", "processed", "6270_Dataset_Selection_Luo_20260204.csv"),
+                   show_col_types = FALSE) |>
+  clean_names()
+
+dim(county)
+names(county)[1:10]
+summary(county$median_household_income)
+```
+
+```{r data-preparation, echo=TRUE}
+df <- county |>
+  transmute(
+    fips,
+    state,
+    county,
+    population,
+    income = median_household_income,
+    pcp_rate = primary_care_physicians_rate,
+    uninsured = percent_uninsured,
+    obesity = percent_adults_with_obesity,
+    smoking = percent_adults_reporting_currently_smoking
+  ) |>
+  filter(!is.na(income), !is.na(pcp_rate)) |>
+  mutate(
+    income_quartile = ntile(income, 4),
+    income_quartile = factor(
+      income_quartile,
+      levels = 1:4,
+      labels = c("Q1 (Lowest income)",
+                 "Q2",
+                 "Q3",
+                 "Q4 (Highest income)")
+    )
+  )
+```
+
+
+```{r data-check, include=FALSE}
+summary(df)
+```
+
+Median household income was used as the main socioeconomic exposure variable. To facilitate stratified descriptive analysis and visualization, income was discretized into quartiles using the ntile() function. This categorization allows comparison of primary care physician availability across counties with relatively lower versus higher income levels.
+
+Counties with missing values for income or primary care physician rate were excluded from the analysis to ensure valid comparisons.
+
+# Grouped Summary Statistics
+```{r grouped-summary}
+summary_table <- df |>
+  group_by(income_quartile) |>
+  summarise(
+    n = n(),
+    mean_pcp = mean(pcp_rate, na.rm = TRUE),
+    median_pcp = median(pcp_rate, na.rm = TRUE),
+    sd_pcp = sd(pcp_rate, na.rm = TRUE),
+    iqr_pcp = IQR(pcp_rate, na.rm = TRUE),
+    mean_uninsured = mean(uninsured, na.rm = TRUE)
+  ) |>
+  mutate(across(where(is.numeric), ~round(., 2)))
+
+kable(summary_table,
+      caption = "Grouped Summary Statistics by Income Quartile",
+      align = "c") |>
+  kable_styling(
+  latex_options = c("hold_position", "striped", "scale_down"),
+  font_size = 9
+)
+```
+Table 1 summarizes key county-level health and healthcare indicators across income quartiles. Counties in higher income quartiles tend to exhibit higher primary care physician availability compared with those in lower income quartiles. Differences are also observed in health-related risk factors, including uninsured rates. These grouped statistics provide an initial descriptive assessment of socioeconomic gradients in healthcare access and health conditions.
+
+# Comparative Visualizations
+```{r Comparation1}
+ggplot(df, aes(x = income_quartile, y = pcp_rate)) +
+  geom_boxplot(fill = "#4C78A8", alpha = 0.7) +
+  labs(
+    title = "Primary Care Physician Supply by Income Quartile",
+    x = "Income Quartile",
+    y = "Primary Care Physicians per 100,000 population"
+  ) +
+  theme_minimal(base_size = 12)
+```
+Figure 1. Distribution of primary care physician (PCP) supply across county income quartiles. Counties in higher income quartiles show higher median PCP availability and overall distribution compared to lower income counties, indicating a socioeconomic gradient in healthcare access.
+
+```{r Comparation2}
+ggplot(df, aes(x = income, y = pcp_rate)) +
+  geom_point(alpha = 0.4, color = "#2A9D8F") +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(
+    title = "Association Between Median Household Income and PCP Supply",
+    x = "Median Household Income",
+    y = "Primary Care Physicians per 100,000 population"
+  ) +
+  theme_minimal(base_size = 12)
+```
+Figure 2. Scatter plot showing the relationship between county median household income and PCP supply. A positive association is observed, with higher-income counties generally having greater physician availability.
+
+```{r Comparation3}
+ggplot(df, aes(x = uninsured, y = pcp_rate)) +
+  geom_point(alpha = 0.4, color = "#E76F51") +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(
+    title = "Association Between Uninsured Rate and PCP Supply",
+    x = "Percent Uninsured",
+    y = "Primary Care Physicians per 100,000 population"
+  ) +
+  theme_minimal(base_size = 12)
+```
+Figure 3. Scatter plot illustrating the relationship between county uninsured rate and primary care physician (PCP) supply. Counties with higher percentages of uninsured residents tend to have lower PCP availability, suggesting potential disparities in healthcare access associated with insurance coverage.
+
+# AI Use Disclosure Statement
+AI assistance (ChatGPT) was used to support understanding of statistical concepts, interpretation of results, and improvement of writing clarity. All analyses, interpretations, and final responses were reviewed and verified by the student.
+
+# References

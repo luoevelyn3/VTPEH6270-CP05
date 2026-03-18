@@ -1,0 +1,332 @@
+---
+title: "VTPEH 6270 - Check Point 04"
+subtitle: "Data Simulation"
+author: "Yuhui"
+date: "`r Sys.Date()`"
+editor_options:
+  chunk_output_type: console
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 1
+    number_sections: true
+urlcolor: blue
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+# Introduction
+
+This document is for instructions only. Please create your own R markdown document as a basis for the rest of the project. The document should respect the following criteria:
+• Is a PDF.
+• Include headers as relevant, and a table of content.
+• Include all R code.
+• Include all figures.
+• Console output may or may not be printed, as relevant.
+• Is understandable and pleasant to navigate (e.g., avoid printing full data set within the report) - Please note that formatting errors will be penalized Sections from previous reports can be re-used if relevant. Any section of the report can be revised as the project develops.
+The goal of this Check Point is to gain experience with data simulation in the context of power analyses.
+
+# Objective and Approach
+
+## Specific Objective
+Is the rate of primary care physicians associated with the percentage of adults reporting fair or poor health at the county level in the United States?
+
+## Data Description
+```{r}
+library(readr)
+library(dplyr)
+library(tibble)
+library(knitr)
+library(tidyr)
+library(ggplot2)
+library(kableExtra)
+library(purrr)
+library(here)
+
+df <- read_csv(here("data", "processed", "6270_Dataset_Selection_Luo_20260204.csv"))
+
+infer_variable_type <- function(x) {
+  x_no_na <- x[!is.na(x)]
+  cls <- class(x)[1]
+
+  # Date / POSIXt
+  if (inherits(x, "Date") || inherits(x, "POSIXt")) return("date/time")
+
+  # categorical
+  if (is.factor(x) || is.character(x) || is.logical(x)) return("categorical")
+
+  # numeric/integer -> continuous vs discrete
+  if (is.integer(x)) return("discrete")
+
+  if (is.numeric(x)) {
+    n_unique <- length(unique(x_no_na))
+    if (n_unique <= 10) return("discrete")
+    return("continuous")
+  }
+
+  return("other")
+}
+
+data_description <- tibble(
+  Variable_Name = names(df),
+  Variable_Type_in_Dataset = sapply(df, infer_variable_type),
+  R_Class = sapply(df, function(x) paste(class(x), collapse = ", "))
+)
+data_description_clean <- data_description %>%
+  rename(
+    "Variable Name" = Variable_Name,
+    "Variable Type in Dataset" = Variable_Type_in_Dataset,
+    "R Class" = R_Class
+  )
+kable(data_description_clean,
+caption = "Description of Variables in the Dataset")
+```
+
+## Data Visualization
+```{r}
+df_clean <- df %>%
+  select(`Primary Care Physicians Rate`,
+         `% Fair or Poor Health`) %>%
+  drop_na()
+
+ggplot(df_clean,
+       aes(x = `Primary Care Physicians Rate`,
+           y = `% Fair or Poor Health`)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  labs(
+    x = "Primary Care Physicians Rate",
+    y = "Percent Reporting Fair or Poor Health",
+    title = "Figure 1: Association Between Primary Care Access and Health Status"
+  ) + coord_cartesian(xlim = c(0, 250)) +
+  theme_minimal()
+
+```
+
+## Description of Plausible Relationships
+
+Visual inspection suggests a negative linear relationship between primary care physician rate and the percentage of adults reporting fair or poor health. Counties with higher physician availability tend to exhibit lower percentages of self-reported poor health. The relationship appears moderately strong, though substantial variability remains across counties.
+
+## Parameters of Interest
+
+```{r, echo=FALSE}
+model <- lm(`% Fair or Poor Health` ~ `Primary Care Physicians Rate`,
+            data = df_clean)
+
+coef_tab <- broom::tidy(model)
+
+a_hat <- coef_tab$estimate[coef_tab$term == "`Primary Care Physicians Rate`"]
+b_hat <- coef_tab$estimate[coef_tab$term == "(Intercept)"]
+
+sigma_hat <- sigma(model)
+
+parameters_table <- tibble::tibble(
+  Parameter = c("Slope", "Intercept", "Noise (Residual SD)"),
+  Symbol = c("a", "b", "$\\varepsilon$"),
+  Estimate = c(a_hat, b_hat, sigma_hat),
+  Description = c(
+    "Change in percent reporting fair/poor health per one-unit increase in primary care physician rate",
+    "Expected percent reporting fair/poor health when physician rate equals zero",
+    "Residual variability in percent reporting fair/poor health across counties not explained by physician rate"
+  )
+) %>%
+  mutate(Estimate = round(Estimate, 3))
+
+kable(parameters_table,
+      caption = "Parameters of Interest for the Linear Model",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  column_spec(1, width = "2cm") %>%
+  column_spec(2, width = "1.5cm") %>%
+  column_spec(3, width = "2cm") %>%
+  column_spec(4, width = "8cm")
+```
+
+Based on the empirical data, the estimated slope is approximately -0.04, indicating that higher physician availability is associated with lower prevalence of fair or poor health. The residual standard deviation provides an estimate of unexplained variability and will inform the noise parameter in the simulation.
+
+# Simulation
+
+## Simulation Basis
+```{r, results='hide'}
+set.seed(123)
+
+# Baseline parameters estimated from the empirical data
+a <- -0.040747  
+b <- 18.201724   
+sigma <- 4.151
+n <- 3000
+
+# Simulate X using the empirical distribution
+x_sim <- sample(df_clean$`Primary Care Physicians Rate`, size = n, replace = TRUE)
+
+# Simulate noise
+eps <- rnorm(n, mean = 0, sd = sigma)
+
+# Generate Y from the linear relationship
+y_sim <- b + a * x_sim + eps
+
+# Create simulated dataset
+sim_data <- data.frame(
+  `Primary Care Physicians Rate` = x_sim,
+  `% Fair or Poor Health` = y_sim,
+  check.names = FALSE
+)
+# Preview
+head(sim_data)
+```
+
+## Simulation Output
+```{r}
+sim_summary <- sim_data %>%
+  mutate(`PCP Rate Quartile` = ntile(`Primary Care Physicians Rate`, 4)) %>%
+  group_by(`PCP Rate Quartile`) %>%
+  summarise(
+    `Mean (%)` = mean(`% Fair or Poor Health`),
+    `SD (%)` = sd(`% Fair or Poor Health`),
+    N = n()
+  )
+
+knitr::kable(sim_summary,
+             caption = "Simulated Summary Statistics by PCP Rate Quartile")
+```
+
+## Simulation Function
+```{r}
+simulate_pcp_health <- function(effect_size, noise, sample_size, seed = NULL) {
+
+  if (!is.null(seed)) set.seed(seed)
+  x_sim <- sample(df_clean$`Primary Care Physicians Rate`,
+                  size = sample_size,
+                  replace = TRUE)
+  b <- 18.201724
+  eps <- rnorm(sample_size, mean = 0, sd = noise)
+  y_sim <- b + effect_size * x_sim + eps
+  y_sim <- pmin(pmax(y_sim, 0), 100)
+
+  #Simulated dataset
+  sim_data <- data.frame(
+    `Primary Care Physicians Rate` = x_sim,
+    `% Fair or Poor Health` = y_sim,
+    check.names = FALSE
+  )
+
+
+  sim_summary <- sim_data %>%
+    mutate(quartile = ntile(`Primary Care Physicians Rate`, 4)) %>%
+    group_by(quartile) %>%
+    summarise(
+      `Mean (%)` = mean(`% Fair or Poor Health`),
+      `SD (%)` = sd(`% Fair or Poor Health`),
+      N = n(),
+      .groups = "drop"
+    ) %>%
+    rename(`PCP Rate Quartile` = quartile)
+
+  return(list(data = sim_data, summary = sim_summary))
+}
+
+```
+
+## Simulation Automation
+```{r, results='hide'}
+# Parameter grids
+effect_sizes <- seq(-0.08, -0.01, length.out = 10)
+sample_sizes <- round(seq(300, 4500, length.out = 10)) 
+noise_levels <- c(3, 4.151, 8)
+
+length(effect_sizes); length(sample_sizes); length(noise_levels)
+
+# Storage list
+sim_results <- vector("list", length(effect_sizes) * length(sample_sizes) * length(noise_levels))
+k <- 1
+
+# Run all simulations
+for (a in effect_sizes) {
+  for (n in sample_sizes) {
+    for (sig in noise_levels) {
+
+      run <- simulate_pcp_health(
+        effect_size = a,
+        noise = sig,
+        sample_size = n
+      )
+
+      # store everything (data + summary + parameters)
+      sim_results[[k]] <- list(
+        effect_size = a,
+        sample_size = n,
+        noise = sig,
+        data = run$data,
+        summary = run$summary
+      )
+
+      k <- k + 1
+    }
+  }
+}
+
+# Name each run
+names(sim_results) <- sapply(sim_results, function(x) {
+  paste0("a=", round(x$effect_size, 3),
+         "_n=", x$sample_size,
+         "_sigma=", round(x$noise, 3))
+})
+
+# Quick sanity check
+length(sim_results)
+names(sim_results)[1:5]
+sim_results[[1]]$summary
+```
+# Visualization
+
+```{r}
+plot_df <- map_dfr(sim_results, function(run) {
+
+  s <- run$summary
+  # quartile 1 and 4 mean
+  mean_q1 <- s$`Mean (%)`[s$`PCP Rate Quartile` == 1]
+  mean_q4 <- s$`Mean (%)`[s$`PCP Rate Quartile` == 4]
+
+  tibble(
+    effect_size = run$effect_size,
+    sample_size = run$sample_size,
+    noise = run$noise,
+    Delta = mean_q4 - mean_q1
+  )
+})
+
+head(plot_df)
+
+ggplot(plot_df, aes(x = factor(sample_size),
+                    y = factor(effect_size),
+                    fill = Delta) )+
+  geom_tile() +
+  facet_wrap(~ noise) +
+  scale_fill_gradient2(low = "darkblue",
+                       mid = "white",
+                       high = "red",
+                       midpoint = 0) +
+  theme_minimal() + theme(
+  axis.text.x = element_text(angle = 45, hjust = 1)
+) + 
+  labs(
+    x = "Sample size",
+    y = "Effect size (a)",
+    fill = expression(Delta)
+  ) + scale_y_discrete(labels = function(x) round(as.numeric(x), 3))
+```
+
+# Interpretation
+
+The heatmap summarizes how the estimated difference between the highest and lowest PCP rate quartiles ($\Delta$ = Mean(Y)Q4 - Mean(Y)Q1) varies across effect sizes, sample sizes, and noise levels. As the effect size becomes more negative, the magnitude of $\Delta$ increases consistently, indicating a stronger difference in the outcome between the highest and lowest PCP rate quartiles. When the effect size is close to zero, $\Delta$ remains small across all parameter combinations, suggesting little difference in outcome across PCP rate groups.
+
+Sample size mainly influences the stability of the estimates. Larger sample sizes produce smoother and more consistent patterns, while smaller sample sizes show slightly greater variability. Increasing noise also introduces more variability in the estimated differences, though the overall trend remains visible. Overall, the simulation indicates that effect size drives the strength of the observed relationship, while sample size and noise primarily affect estimation variability.
+
+# AI Use Disclosure Statement
+
+AI assistance (ChatGPT) was used to support understanding of statistical concepts, interpretation of results, and improvement of writing clarity. All analyses, interpretations, and final responses were reviewed and verified by the student.
+

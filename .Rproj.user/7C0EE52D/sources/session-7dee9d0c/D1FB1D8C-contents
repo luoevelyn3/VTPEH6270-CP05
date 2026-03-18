@@ -1,0 +1,26 @@
+# VTPEH 6270 - Check Point 05
+
+## Author
+Yuhui Luo
+
+## Objective
+This project explores the relationship between variables using exploratory data analysis and simulation.
+
+## Data
+- 6270 dataset (county-level data)
+
+## Methods
+- Data cleaning and exploration
+- Visualization
+- Simulation analysis
+
+## Structure
+- scripts/: R Markdown files
+- data/: raw and processed data
+- output/: generated results
+
+## Output
+PDF reports generated from R Markdown files
+
+## AI Disclosure
+ChatGPT was used to assist in debugging and structuring the project.

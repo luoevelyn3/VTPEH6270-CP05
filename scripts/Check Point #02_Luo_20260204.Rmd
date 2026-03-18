@@ -1,0 +1,117 @@
+---
+title: "VTPEH 6270 - Check Point 02"
+subtitle: "Data Set Selection & R markdown Report Outline"
+author: "Yuhui Luo"
+date: "2026-02-04"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+
+knitr::opts_knit$set(
+  root.dir = "~/Library/CloudStorage/OneDrive-CornellUniversity/6270"
+)
+```
+
+## 1. Introduction
+**Background (<=100 words).**  
+County-level health indicators are widely used in public health research to understand population health patterns and disparities across geographic areas in the United States. Factors such as obesity prevalence, smoking behavior, aging population structure, and access to primary care vary substantially across counties and are associated with long-term health outcomes.
+
+**Project question (<=50 words).**  
+Is adult obesity prevalence associated with smoking prevalence at the county level in the United States?
+
+**Data set overview (<=100 words).**  
+This dataset contains county-level health and demographic indicators for counties in the United States. Variables include population size, age structure, adult obesity prevalence, smoking prevalence, and access to primary care physicians. Data are aggregated at the county level and represent recent estimates for U.S. counties.
+
+
+## 2. Data Set Exploration
+
+```{r data-import}
+library(tidyverse)
+library(janitor)
+
+df <- read_csv("../6270/6270_Dataset Selection_Luo_20260204.csv") |>
+  clean_names()
+
+glimpse(df)
+```
+
+
+## 3. Data Visualization
+
+### 3.1 Distribution of adult obesity prevalence
+```{r histogram-obesity}
+library(ggplot2)
+
+ggplot(
+  df |> filter(!is.na(percent_adults_with_obesity)),
+  aes(x = percent_adults_with_obesity)
+) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  geom_vline(
+    aes(
+      xintercept = mean(percent_adults_with_obesity),
+      color = "Mean",
+      linetype = "Mean"
+    ),
+    linewidth = 1
+  ) +
+  geom_vline(
+    aes(
+      xintercept = median(percent_adults_with_obesity),
+      color = "Median",
+      linetype = "Median"
+    ),
+    linewidth = 1
+  ) +
+  scale_color_manual(
+    name = "",
+    values = c("Mean" = "red", "Median" = "black")
+  ) +
+  scale_linetype_manual(
+    name = "",
+    values = c("Mean" = "dashed", "Median" = "solid")
+  ) +
+  labs(
+    x = "Adult obesity prevalence (%)",
+    y = "Number of counties",
+    caption = "Figure 1. Distribution of adult obesity prevalence across U.S. counties.\nVertical lines indicate the mean (dashed red) and median (solid black)."
+  ) +
+  theme_minimal()+
+  theme(
+    plot.caption = element_text(hjust = 0.5)
+  )
+```
+
+### 3.2 Association between adult obesity and smoking prevalence
+```{r scatter-obesity-smoking}
+ggplot(
+  df,
+  aes(
+    x = percent_adults_reporting_currently_smoking,
+    y = percent_adults_with_obesity
+  )
+) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+  x = "Adult smoking prevalence (%)",
+  y = "Adult obesity prevalence (%)",
+  caption = "Figure 2. Association between adult smoking prevalence and adult obesity prevalence across U.S. counties.\nThe line represents the fitted linear trend with a 95% confidence band."
+) +
+  theme_classic()+
+  theme(
+    plot.caption = element_text(hjust = 0.5)
+  )
+```
+The scatterplot suggests a positive association between adult smoking prevalence and adult obesity prevalence at the county level, with higher smoking prevalence generally corresponding to higher obesity prevalence.
+
+## 4. AI Use Disclosure Statement
+
+I used ChatGPT to assist with R coding and to improve the clarity and organization of the written text. All code and interpretations were reviewed and adapted by me to ensure accuracy and compliance with course instructions.

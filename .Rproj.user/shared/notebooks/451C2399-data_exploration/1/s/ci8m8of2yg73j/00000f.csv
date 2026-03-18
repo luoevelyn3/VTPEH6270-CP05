@@ -1,0 +1,9 @@
+"0","county <- read_csv(here(""data"", ""processed"", ""6270_Dataset_Selection_Luo_20260204.csv""),"
+"0","                   show_col_types = FALSE) |>"
+"0","  clean_names()"
+"1","[1m[33mError[39m:[22m
+[38;5;232m[33m![38;5;232m 
+  ]8;;file:///Users/evelyn/Library/CloudStorage/OneDrive-CornellUniversity/6270/VTPEH6270-CP05/data/processed/6270_Dataset_Selection_Luo_20260204.csv[34m/Users/evelyn/Library/CloudStorage/OneDrive-CornellUniversity/6270/VTPEH6270-CP05/data/processed/6270_Dataset_Selection_Luo_20260204.csv[38;5;232m]8;;
+  does not exist.[39m
+[90mRun `]8;;x-r-run:rlang::last_trace()rlang::last_trace()]8;;` to see where the error occurred.[39m
+"
