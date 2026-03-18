@@ -1,0 +1,12 @@
+# VTPEH6270 CP05
+
+This repository contains:
+
+## Structure
+- data/: input datasets
+- scripts/: R Markdown analysis files
+- output/: generated outputs (PDF)
+
+## Main files
+- data_exploration.Rmd
+- simulation.Rmd
