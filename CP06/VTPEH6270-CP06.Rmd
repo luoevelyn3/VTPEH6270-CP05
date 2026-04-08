@@ -1,0 +1,141 @@
+---
+title: "VTPEH 6270 - Check Point 06"
+subtitle: "Statistical Analyses"
+author: "Yuhui Luo"
+date: "`r Sys.Date()`"
+editor_options:
+  chunk_output_type: console
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 1
+    number_sections: true
+    latex_engine: xelatex
+urlcolor: blue
+bibliography: references0408.bib
+csl: https://www.zotero.org/styles/american-medical-association
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+# Instructions
+
+This document is for instructions only. Please create your own R markdown document as a basis for the rest
+of the project. The document should respect the following criteria:
+
+  • Is a PDF.  
+  • Includes headers as relevant, and a table of content.  
+  • Includes all R code.  
+  • Includes all figures.  
+  • Includes a link to the GitHub repository that contains the documents (data, scripts, etc as relevant) to replicate this report.  
+  • Console output may or may not be printed, as relevant.  
+  • Is understandable and pleasant to navigate (e.g., avoid printing full data set within the report) - Please note that formatting errors will be penalized.  
+
+Sections from previous reports can be re-used if relevant. Any section of the report can be revised as the project develops. The goal of this Check Point is to practice data analysis, in particular hypothesis testing and reporting.
+
+# Introduction 
+
+This study examines the association between adult obesity prevalence and fair or poor self-rated health at the county level in the United States. The research question is: **Is a higher percentage of adults with obesity associated with a higher percentage of adults reporting fair or poor health?**
+
+This question is scientifically plausible because obesity is a major chronic disease risk factor and is associated with adverse physical functioning, cardiometabolic disease, and reduced quality of life. In the United States, obesity remains highly prevalent among adults, indicating that it is an important public health concern [@cdc_obesity]. 
+
+In addition, self-rated health is a meaningful population health indicator because it is associated with hospitalization and mortality [@cdc_health]. Prior epidemiologic studies have consistently shown that obesity is associated with worse self-rated health and reduced quality of life among adults [@okosun2001; @jia2005].
+
+Based on this evidence, it is hypothesized that counties with higher adult obesity prevalence will also have a higher percentage of adults reporting fair or poor health.
+
+# Material & Methods 
+
+## Data
+
+## 2.1 Data
+
+The dataset used in this analysis consists of county-level health, demographic, and socioeconomic indicators across the United States. The data were compiled from multiple publicly available sources and provided as a pre-processed dataset for this course.
+
+The majority of variables were derived from the University of Wisconsin Population Health Institute’s County Health Rankings and Roadmaps (UWPHI CHRR), which aggregates data from multiple national sources. Additional demographic variables, including population characteristics and racial/ethnic composition, were obtained from the United States Census Bureau. Socioeconomic indicators such as median household income were derived from the Small Area Income and Poverty Estimates and the American Community Survey. Health care access measures, including the uninsured rate and primary care physician rate, were obtained from the Small Area Health Insurance Estimates and related national datasets. Behavioral risk factors, including smoking and obesity prevalence, were obtained from the Behavioral Risk Factor Surveillance System (BRFSS). The dataset includes variables describing population structure (e.g., percent aged 65 and over, percent female, and racial/ethnic composition), socioeconomic conditions (e.g., income, unemployment, and education), healthcare access, and health behaviors.
+
+The primary outcome variable in this analysis is the percentage of adults reporting fair or poor health, and the primary exposure of interest is the percentage of adults with obesity.
+
+The dataset represents an integrated county-level dataset combining multiple national data sources. Data from different sources were linked using unique county identifiers (Federal Information Processing Standards, FIPS codes), ensuring consistent alignment of observations across datasets. Prior to analysis, the dataset was inspected for completeness and consistency. Basic data cleaning procedures were performed, including verification of variable formats and handling of missing values where necessary. No major transformations were applied unless specified in subsequent analyses.
+
+## Statistical Analyses
+
+To examine the association between adult obesity prevalence and the percentage of adults reporting fair or poor health, a linear regression model was used. The outcome variable was the percentage of adults reporting fair or poor health, and the primary exposure variable was the percentage of adults with obesity.
+
+Prior to model fitting, exploratory data analysis was conducted using scatter plots to assess the linearity of the relationship between obesity prevalence and self-rated health. A simple linear regression model was then fitted to quantify the association between the two variables.
+
+Model assumptions were evaluated to ensure the validity of the linear regression approach. Linearity was assessed through visual inspection of scatter plots. Normality of residuals was evaluated using Q-Q plots. Homoscedasticity (constant variance of residuals) was assessed using residuals versus fitted value plots. Independence of observations was assumed based on the cross-sectional nature of county-level data.
+
+All analyses were conducted using R (version 4.5.1).
+
+## Code
+
+All materials required to reproduce this report are available in the following GitHub repository:  
+https://github.com/luoevelyn3/VTPEH6270-CP05/tree/main/CP06
+
+```{r,results = 'hide'}
+library(readr)
+
+df <- read_csv("VTPEH6270-CP05/data/processed/6270_Dataset_Selection_Luo_20260204.csv")
+
+names(df) <- make.names(names(df))
+
+df$obesity <- df$X..Adults.with.Obesity
+df$poor_health <- df$X..Fair.or.Poor.Health
+```
+
+```{r}
+df$obesity <- df$X..Adults.with.Obesity
+df$poor_health <- df$X..Fair.or.Poor.Health
+
+plot(
+  df$obesity,
+  df$poor_health,
+  xlab = "Adult Obesity (%)",
+  ylab = "Fair or Poor Health (%)",
+  main = "Obesity vs Fair/Poor Health"
+)
+```
+
+```{r,results = 'hide'}
+model <- lm(poor_health ~ obesity, data = df)
+summary(model)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(model)
+```
+
+# Results
+
+A linear regression model was used to assess the association between adult obesity prevalence and the percentage of adults reporting fair or poor health at the county level.
+
+The analysis showed a strong positive association between obesity and poor self-rated health. Specifically, for each one percentage point increase in adult obesity prevalence, the percentage of adults reporting fair or poor health increased by 0.69 percentage points (beta = 0.69, SE = 0.01, p < 0.001).
+
+The model explained a substantial proportion of the variability in the outcome, with an R-squared of 0.53, indicating that approximately 53% of the variation in fair or poor self-rated health across counties is explained by differences in obesity prevalence.
+
+The overall model was statistically significant (F = 3573, p < 0.001), suggesting that obesity is a strong predictor of population-level self-rated health. Residual diagnostics indicated no major violations of model assumptions.
+
+Visual inspection of diagnostic plots indicated no major violations of linear regression assumptions. These findings support the hypothesis that higher levels of obesity are associated with worse self-rated health at the county level.
+
+# Conclusions
+
+The findings of this analysis are consistent with the original research question and hypothesis, which proposed that higher levels of obesity would be associated with worse self-rated health at the county level. The results demonstrated a strong positive association between obesity prevalence and the percentage of adults reporting fair or poor health, aligning with expectations based on existing public health knowledge.
+
+These findings are consistent with prior literature, which has shown that obesity is associated with poorer physical functioning, increased risk of chronic disease, and reduced quality of life. Previous epidemiologic studies have similarly reported that individuals with obesity are more likely to report worse self-rated health, supporting the direction and magnitude of the association observed in this analysis.
+
+From a public health perspective, the results suggest that obesity may be an important marker of population health at the county level. Counties with higher obesity prevalence tend to have a greater burden of poor self-rated health, which may reflect broader underlying social, behavioral, and healthcare-related factors.
+
+However, this study is based on cross-sectional, county-level data and therefore cannot establish causality. The observed association may be influenced by unmeasured confounding factors such as socioeconomic conditions, access to healthcare, or other health behaviors. Future analyses incorporating additional covariates or longitudinal data would help better understand the underlying mechanisms of this relationship.
+
+Overall, these findings reinforce the importance of addressing obesity as part of broader efforts to improve population health and reduce health disparities.
+
+# AI Use Disclosure Statement
+
+AI assistance (ChatGPT) was used to support understanding of statistical concepts, interpretation of results, and improvement of writing clarity. All analyses, interpretations, and final responses were reviewed and verified by the student.
+
+# References
