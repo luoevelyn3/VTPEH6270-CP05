@@ -1,0 +1,12 @@
+name: my_shiny_app
+title:
+username: yl42
+account: yl42
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17193602
+bundleId: 11886084
+url: https://yl42.shinyapps.io/my_shiny_app/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
