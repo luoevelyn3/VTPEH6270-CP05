@@ -1,0 +1,82 @@
+# County-Level Health and Demographic Explorer
+
+## Overview
+
+This Shiny application explores relationships between demographic characteristics and health outcomes across U.S. counties using a county-level dataset selected for a public health course project. The app is designed as an interactive tool for exploratory data analysis, allowing users to investigate potential associations between variables related to aging, socioeconomic conditions, and health status.
+
+---
+
+## App Features
+
+- **Interactive variable selection**  
+  Users can choose any two numeric variables from the dataset to examine their relationship.
+
+- **Scatter plot with trend line**  
+  Displays the association between selected variables, with a fitted linear regression line to highlight overall trends.
+
+- **Distribution visualization**  
+  A histogram shows the distribution of the selected outcome variable.
+
+- **Summary statistics**  
+  The app reports key statistics, including:
+  - Mean
+  - Standard deviation
+  - Correlation
+  - Sample size
+
+- **User-controlled updates**  
+  A button allows users to update the analysis after selecting variables, ensuring clear and intentional interaction.
+
+---
+
+## Data Source
+
+The dataset used in this application contains county-level demographic and health indicators across the United States. Variables include:
+
+- Population characteristics (e.g., % aged 65 and over, race/ethnicity composition)
+- Socioeconomic indicators (e.g., median household income, unemployment)
+- Health-related measures (e.g., % uninsured, % adults with obesity, % fair or poor health)
+
+This dataset was selected as part of a course assignment and is used here for educational and exploratory purposes.
+
+---
+
+## Purpose
+
+The goal of this app is to support exploratory public health analysis by enabling users to:
+
+- Identify patterns between demographic and health variables  
+- Examine potential correlations across counties  
+- Generate hypotheses for further statistical or epidemiological analysis  
+
+---
+
+## How to Use
+
+1. Select an **x-axis variable** and a **y-axis variable** from the dropdown menus.
+2. Click the **"Update analysis"** button.
+3. View:
+   - The scatter plot showing the relationship between variables
+   - The distribution of the selected y-variable
+   - Summary statistics for both variables
+
+---
+
+## Deployment
+
+This application is deployed on shinyapps.io and can be accessed here:
+
+👉 https://yl42.shinyapps.io/my_shiny_app/
+
+---
+
+## Author
+
+Yuhui Luo  
+
+---
+
+## Notes
+
+- This app is intended for exploratory analysis and does not imply causal relationships.
+- Results should be interpreted within the broader context of public health research.
